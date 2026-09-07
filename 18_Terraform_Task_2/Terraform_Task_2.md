@@ -158,7 +158,17 @@ output "west_instance_public_ip" {
 }
 
 
-git add .; git commit -m "18_Terraform_Task_2"; git push
+
+md_rustam@DESKTOP-CPK0PUB:~/Project$ git add .; git commit -m "18_Terraform_Task_2"; git push origin main
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 875 bytes | 291.00 KiB/s, done.
+Total 4 (delta 3), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (3/3), completed with 3 local objects.
+To https://github.com/StarGithMd/Guvi_DevOps.git
+   834eb4f..421d9fa  main -> main
 
 
 
