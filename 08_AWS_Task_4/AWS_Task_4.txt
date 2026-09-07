@@ -1,0 +1,88 @@
+
+#########################################################################################################################
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GUVI Assignment 08 Task-4 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#########################################################################################################################
+
+### AWS Task-4
+https://docs.google.com/document/d/11a2HCpdG2K088lnPoAU43q6jtLn0Pvc52EX3y8LLTsA/edit?usp=sharing
+
+#### Techstacks needs to be used : 
+   - AWS EBS
+   - AWS EC2
+
+#### How do I submit my work?
+   - Push all your work files to GitHub (O/P screenshot images must).
+   - Submit your URLs in the portal.
+
+#### Terms and Conditions?
+   - You agree to not share this confidential document with anyone. 
+   - You agree to open-source your code (it may even look good on your profile!). Do not mention our company’s name anywhere in the code.
+   - We will never use your source code under any circumstances for any commercial purposes; this is just a basic assessment task. 
+
+   - NOTE: Any violation of Terms and conditions is strictly prohibited. You are bound to adhere to it.
+
+#### Task Description:
+- 01_Q. Launch an EC2 instance (Linux and Windows) along with a web server. Then, create an EBS volume of 5 GB, attach it to an EC2 machine (Linux and Windows), and take a snapshot. Finally, create an EBS volume using the taken snapshot.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GUVI Assignment 08 Task-4 Activity_01 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#### The following points were observed before carrying out the activity to complete the assigned task.
+- Verify the accessibility and configuration of the AWS CLI on the source system from which intend to access AWS console services.
+  - 1. Availability-Zone(AZ): us-east-1, 
+  - 2. Default PVC: vpc-0e55dc323224aeac9,
+  - 3. Subnets of Default PVC: subnet-0252352dc0f972362,
+  - 4. Security-Group(sg): MySG, 
+  - 5. Key_Pair: MyKey, 
+  - 6. Image-Id: Linux "ami-0ed094fb1304fd857" & Windows "ami-0798c9ebaf695e14e"
+  - 7. Launch EC2 2 Instances: Instance (Linux and Windows).
+  - 8. Install web packages on both instances (Linux and Windows).
+  - 9. Create 5Gb EBS volume, and attached them with both instances
+  - 10. Take a snapshot and make EBS volume using the snapshot.
+
+- Step-01. Every AWS region has a already created default VPC. Verify it:  
+   - aws ec2 describe-vpcs --filters Name=isDefault,Values=true
+   
+- Step 2: Each Availability Zone having subnets with the Default VPCs.
+   - aws ec2 describe-subnets --filters Name=vpc-id,Values=vpc-0e55dc323224aeac9
+
+- Step 3: Create a Security Group
+   - aws ec2 create-security-group --group-name MyDefaultSG --description "Allow SSH and HTTP" --vpc-id vpc-0e55dc323224aeac9
+
+   - aws ec2 authorize-security-group-ingress --group-id sg-0a105760c3863d04b --protocol tcp --port 22 --cidr 0.0.0.0/0
+   - aws ec2 authorize-security-group-ingress --group-id sg-0a105760c3863d04b --protocol tcp --port 80 --cidr 0.0.0.0/0
+
+- Step 4: Create a new key pair with a new name to access the instance operarting system.
+  - aws ec2 create-key-pair --key-name MyKey2 --query "KeyMaterial" --output text > MyKey2.pem 
+   
+- Step 5: Create 2 instance (Linux and Windows)
+  - aws ec2 run-instances --image-id "ami-0ed094fb1304fd857" --count 1 --instance-type t2.micro --key-name MyKey2 --security-group-ids "sg-0a105760c3863d04b" --subnet-id "subnet-0252352dc0f972362" --associate-public-ip-address --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=LinuxInstance}]"
+  
+  - aws ec2 run-instances --image-id "ami-0798c9ebaf695e14e" --count 1 --instance-type t3.micro --key-name MyKey2 --security-group-ids "sg-0a105760c3863d04b" --subnet-id "subnet-0252352dc0f972362" --associate-public-ip-address --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=LinuxInstance}]"
+   
+- Step 5: Install Web Service on both the instances Linux (Amazon Linux 2) and Windows (Server 2025)
+  - access the instance with associated key pair of the both systems.
+   - ssh -i "MyKey2.pem" ec2-user@ec2-18-212-176-174.compute-1.amazonaws.com
+   
+   - sudo yum update -y; sudo yum install -y httpd
+   - sudo systemctl enable --now httpd
+
+- Step 6: Create EBS Volume (5 GB) on both instances.
+ - List available zones in your region:
+   - aws ec2 describe-availability-zones --region us-east-1
+   - aws ec2 create-volume --availability-zone us-east-1a --size 5 --volume-type gp2 --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=MyDataVolume}]"
+   - aws ec2 create-volume --availability-zone us-east-1a --size 5 --volume-type gp2 --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=MyDataVolume}]"
+   
+- Step 7: Attach EBS Volume to the both EC2 instances 
+ - Linux EC2
+   - aws ec2 attach-volume --volume-id vol-0161351216b485921 --instance-id i-0a31896d8f6f77646 --device /dev/sdf
+
+ - Windows EC2
+   - aws ec2 attach-volume --volume-id i-0d95cb4aecd4e24b3 --instance-id i-0d95cb4aecd4e24b3 --device xvdf
+
+- Step 8: Take Snapshot of the Volume
+   - aws ec2 create-snapshot --volume-id vol-xxxxxxxx --description "Snapshot of MyDataVolume"
+   
+- Step 9: Create New EBS Volume from Snapshot
+   - aws ec2 create-volume --availability-zone ap-south-1a --snapshot-id snap-xxxxxxxx --volume-type gp2 --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=RestoredVolume}]"
+
+#### Post completed the assigned tasks, committed successfully and pushed the changes to the GitHub repository.
