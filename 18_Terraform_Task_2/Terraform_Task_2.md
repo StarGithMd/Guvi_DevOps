@@ -95,274 +95,70 @@ md_rustam@DESKTOP-CPK0PUB:~/Project/18_Terraform_Task_2$ vi main.tf
 # Region 1
 ##############################
 
-data "aws_ami" "ubuntu_region1" {
-  provider    = aws.region1
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
-resource "aws_security_group" "nginx_sg_region1" {
-  provider    = aws.region1
-  name        = "${var.project_name}-sg-${var.region1}"
-  description = "Allow HTTP and SSH"
-
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-sg-${var.region1}"
-  }
-}
-
-resource "aws_instance" "nginx_region1" {
-  provider               = aws.region1
-  ami                     = data.aws_ami.ubuntu_region1.id
-  instance_type           = var.instance_type
-  key_name                = var.key_name != "" ? var.key_name : null
-  vpc_security_group_ids  = [aws_security_group.nginx_sg_region1.id]
-
-  user_data = templatefile("${path.module}/user_data.sh", {
-    region = var.region1
-  })
-
-  tags = {
-    Name = "${var.project_name}-${var.region1}"
-  }
-}
-
-##############################
-# Region 2
-##############################
-
-data "aws_ami" "ubuntu_region2" {
-  provider    = aws.region2
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
-resource "aws_security_group" "nginx_sg_region2" {
-  provider    = aws.region2
-  name        = "${var.project_name}-sg-${var.region2}"
-  description = "Allow HTTP and SSH"
-
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-sg-${var.region2}"
-  }
-}
-
-resource "aws_instance" "nginx_region2" {
-  provider               = aws.region2
-  ami                     = data.aws_ami.ubuntu_region2.id
-  instance_type           = var.instance_type
-  key_name                = var.key_name != "" ? var.key_name : null
-  vpc_security_group_ids  = [aws_security_group.nginx_sg_region2.id]
-
-  user_data = templatefile("${path.module}/user_data.sh", {
-    region = var.region2
-  })
-
-  tags = {
-    Name = "${var.project_name}-${var.region2}"
-  }
-}
-
-md_rustam@DESKTOP-CPK0PUB:~/Project/18_Terraform_Task_2$ vi providers.tf
-terraform {
-  required_version = ">= 1.3.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-# Default/primary region provider
 provider "aws" {
-  alias  = "region1"
-  region = var.region1
+  region = "us-east-1"
+  alias  = "use1"
 }
 
-# Secondary region provider
 provider "aws" {
-  alias  = "region2"
-  region = var.region2
-}
-md_rustam@DESKTOP-CPK0PUB:~/Project/18_Terraform_Task_2$ vi variables.tf
-variable "region1" {
-  description = "First AWS region"
-  type        = string
-  default     = "us-east-1"
+  region = "us-west-2"
+  alias  = "usw2"
 }
 
-variable "region2" {
-  description = "Second AWS region"
-  type        = string
-  default     = "ap-south-1"
+# EC2 in us-east-1
+resource "aws_instance" "east_instance" {
+  provider      = aws.use1
+  ami           = "ami-081b0a6eac00b4f53" # Amazon Linux 2 AMI in us-east-1
+  instance_type = "t2.micro"
+  key_name      = "east-key" # replace with your existing key pair name in us-east-1
+
+  # Default security group attaches automatically
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              amazon-linux-extras install nginx1 -y
+              systemctl enable nginx
+              systemctl start nginx
+              EOF
+
+  tags = {
+    Name = "nginx-east"
+  }
 }
 
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t3.micro"
+# EC2 in us-west-2
+resource "aws_instance" "west_instance" {
+  provider      = aws.usw2
+  ami           = "ami-0bea529386a62a2ad" # Amazon Linux 2 AMI in us-west-2
+  instance_type = "t2.micro"
+  key_name      = "west-key" # replace with your existing key pair name in us-west-2
+
+  # Default security group attaches automatically
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              amazon-linux-extras install nginx1 -y
+              systemctl enable nginx
+              systemctl start nginx
+              EOF
+
+  tags = {
+    Name = "nginx-west"
+  }
 }
 
-variable "key_name" {
-  description = "Name of an existing EC2 key pair to enable SSH access (leave blank to skip SSH key assignment)"
-  type        = string
-  default     = ""
+output "east_instance_public_ip" {
+  value = aws_instance.east_instance.public_ip
 }
 
-variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed to SSH into the instances"
-  type        = string
-  default     = "0.0.0.0/0"
+output "west_instance_public_ip" {
+  value = aws_instance.west_instance.public_ip
 }
 
-variable "project_name" {
-  description = "Name prefix used to tag resources"
-  type        = string
-  default     = "nginx-multiregion"
-} variable "region1" {
-  description = "First AWS region"
-  type        = string
-  default     = "us-east-1"
-}
 
-variable "region2" {
-  description = "Second AWS region"
-  type        = string
-  default     = "ap-south-1"
-}
-
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t3.micro"
-}
-
-variable "key_name" {
-  description = "Name of an existing EC2 key pair to enable SSH access (leave blank to skip SSH key assignment)"
-  type        = string
-  default     = ""
-}
-
-variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed to SSH into the instances"
-  type        = string
-  default     = "0.0.0.0/0"
-}
-
-variable "project_name" {
-  description = "Name prefix used to tag resources"
-  type        = string
-  default     = "nginx-multiregion"
-}
-
-md_rustam@DESKTOP-CPK0PUB:~/Project/18_Terraform_Task_2$ vi outputs.tf
-output "region1_instance_public_ip" {
-  description = "Public IP of the EC2 instance in region 1"
-  value       = aws_instance.nginx_region1.public_ip
-}
-
-output "region1_instance_id" {
-  description = "Instance ID in region 1"
-  value       = aws_instance.nginx_region1.id
-}
-
-output "region2_instance_public_ip" {
-  description = "Public IP of the EC2 instance in region 2"
-  value       = aws_instance.nginx_region2.public_ip
-}
-
-output "region2_instance_id" {
-  description = "Instance ID in region 2"
-  value       = aws_instance.nginx_region2.id
-}
-
-md_rustam@DESKTOP-CPK0PUB:~/Project/18_Terraform_Task_2$ vi user_data.sh
-#!/bin/bash
-set -e
-apt-get update -y
-apt-get install -y nginx
-systemctl enable nginx
-systemctl start nginx
-
-# Simple identifying page so you can tell the two instances apart
-cat <<'EOF' > /var/www/html/index.nginx-debian.html
-<html>
-  <head><title>Nginx on $${region}</title></head>
-  <body>
-    <h1>Nginx is running on $${region}</h1>
-  </body>
-</html>
-EOF
-
-
+git add .; git commit -m "18_Terraform_Task_2"; git push
 
 
 
