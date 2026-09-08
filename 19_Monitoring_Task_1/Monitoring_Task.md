@@ -176,13 +176,18 @@ Use Dashboard ID: 1860 (Node Exporter Full Dashboard).
 This gives you CPU, memory, disk, and network metrics instantly.
 
 
-md_rustam@DESKTOP-CPK0PUB:~/Project$ git add .; git commit -m "18_Terraform_Task_2"; git push origin main
-Enumerating objects: 7, done.
-Counting objects: 100% (7/7), done.
+md_rustam@DESKTOP-CPK0PUB:~/Project$ git add .; git commit -m "19_Monitoring_Task_1"; git push origin main
+warning: in the working copy of '19_Monitoring_Task_1/Monitoring_Task.md', CRLF will be replaced by LF the next time Git touches it
+[main 77a214a] 19_Monitoring_Task_1
+ 2 files changed, 188 insertions(+)
+ create mode 100644 19_Monitoring_Task_1/Monitoring_Task.md
+ create mode 100644 19_Monitoring_Task_1/Prometheus_Grafana.jpg
+Enumerating objects: 6, done.
+Counting objects: 100% (6/6), done.
 Delta compression using up to 8 threads
-Compressing objects: 100% (4/4), done.
-Writing objects: 100% (4/4), 875 bytes | 291.00 KiB/s, done.
-Total 4 (delta 3), reused 0 (delta 0), pack-reused 0 (from 0)
-remote: Resolving deltas: 100% (3/3), completed with 3 local objects.
+Compressing objects: 100% (5/5), done.
+Writing objects: 100% (5/5), 4.57 MiB | 5.70 MiB/s, done.
+Total 5 (delta 1), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
 To https://github.com/StarGithMd/Guvi_DevOps.git
-   834eb4f..421d9fa  main -> main
+   df6f30b..77a214a  main -> main
