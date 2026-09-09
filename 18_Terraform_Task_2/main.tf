@@ -1,137 +1,66 @@
-##############################
-# Region 1
-##############################
-
-data "aws_ami" "ubuntu_region1" {
-  provider    = aws.region1
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
+# main.tf
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
   }
 }
 
-resource "aws_security_group" "nginx_sg_region1" {
-  provider    = aws.region1
-  name        = "${var.project_name}-sg-${var.region1}"
-  description = "Allow HTTP and SSH"
+provider "aws" {
+  region = "us-east-1"
+  alias  = "useast"
+}
 
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+provider "aws" {
+  region = "us-west-2"
+  alias  = "uswest"
+}
 
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
-  }
+# EC2 in us-east-1
+resource "aws_instance" "east_nginx" {
+  provider      = aws.useast
+  ami           = "ami-081b0a6eac00b4f53" # Amazon Linux 2 AMI in us-east-1
+  instance_type = "t2.micro"
+  key_name      = "key_pair_090926"       # must exist in us-east-1
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # Attach default security group
+  vpc_security_group_ids = ["default"]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              amazon-linux-extras install nginx1 -y
+              systemctl enable nginx
+              systemctl start nginx
+              EOF
 
   tags = {
-    Name = "${var.project_name}-sg-${var.region1}"
+    Name = "nginx-east"
   }
 }
 
-resource "aws_instance" "nginx_region1" {
-  provider               = aws.region1
-  ami                     = data.aws_ami.ubuntu_region1.id
-  instance_type           = var.instance_type
-  key_name                = var.key_name != "" ? var.key_name : null
-  vpc_security_group_ids  = [aws_security_group.nginx_sg_region1.id]
+# EC2 in us-west-2
+resource "aws_instance" "west_nginx" {
+  provider      = aws.uswest
+  ami           = "ami-0bea529386a62a2ad" # Amazon Linux 2 AMI in us-west-2
+  instance_type = "t2.micro"
+  key_name      = "key_pair_090926"       # must exist in us-west-2
 
-  user_data = templatefile("${path.module}/user_data.sh", {
-    region = var.region1
-  })
+  # Attach default security group
+  vpc_security_group_ids = ["default"]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              amazon-linux-extras install nginx1 -y
+              systemctl enable nginx
+              systemctl start nginx
+              EOF
 
   tags = {
-    Name = "${var.project_name}-${var.region1}"
+    Name = "nginx-west"
   }
 }
 
-##############################
-# Region 2
-##############################
-
-data "aws_ami" "ubuntu_region2" {
-  provider    = aws.region2
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
-resource "aws_security_group" "nginx_sg_region2" {
-  provider    = aws.region2
-  name        = "${var.project_name}-sg-${var.region2}"
-  description = "Allow HTTP and SSH"
-
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-sg-${var.region2}"
-  }
-}
-
-resource "aws_instance" "nginx_region2" {
-  provider               = aws.region2
-  ami                     = data.aws_ami.ubuntu_region2.id
-  instance_type           = var.instance_type
-  key_name                = var.key_name != "" ? var.key_name : null
-  vpc_security_group_ids  = [aws_security_group.nginx_sg_region2.id]
-
-  user_data = templatefile("${path.module}/user_data.sh", {
-    region = var.region2
-  })
-
-  tags = {
-    Name = "${var.project_name}-${var.region2}"
-  }
-}
