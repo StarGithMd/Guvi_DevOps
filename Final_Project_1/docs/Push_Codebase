@@ -1,0 +1,4 @@
+git add Dockerfile deployment.yaml service.yaml buildspec.yml
+git commit -m "Add Dockerfile, K8s manifests, and buildspec.yml"
+git branch -M main
+git push -u origin main

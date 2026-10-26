@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_HUB_USER = 'your_dockerhub_username'
+        DEV_REPO = 'your_dockerhub_username/dev'
+        PROD_REPO = 'your_dockerhub_username/prod'
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build & Push Dev') {
+            when { branch 'dev' }
+            steps {
+                script {
+                    sh "./build.sh ${DEV_REPO} latest"
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh "docker login -u ${USER} -p ${PASS}"
+                        sh "docker push ${DEV_REPO}:latest"
+                    }
+                }
+            }
+        }
+        stage('Build & Push Prod') {
+            when { branch 'master' }
+            steps {
+                script {
+                    sh "./build.sh ${PROD_REPO} production"
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh "docker login -u ${USER} -p ${PASS}"
+                        sh "docker push ${PROD_REPO}:production"
+                    }
+                }
+            }
+        }
+        stage('Deploy Application') {
+            steps {
+                script {
+                    // Triggers deploy script based on branch environment
+                    def tag = env.BRANCH_NAME == 'master' ? 'production' : 'latest'
+                    def repo = env.BRANCH_NAME == 'master' ? PROD_REPO : DEV_REPO
+                    sh "./deploy.sh ${repo}:${tag}"
+                }
+            }
+        }
+    }
+}
+
